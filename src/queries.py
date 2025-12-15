@@ -79,3 +79,20 @@ def get_genre_popularity(session: Session):
     
     for genre, count in results:
         print(f"{genre}: видано {count} разів")
+
+def get_reader_ranks(session):
+    reader_stats = session.query(
+        Reader.id,
+        Reader.first_name,
+        Reader.last_name,
+        func.count(Loan.id).label('total_loans')
+    ).join(Loan).group_by(Reader.id).subquery()
+
+    query = session.query(
+        reader_stats.c.first_name,
+        reader_stats.c.last_name,
+        reader_stats.c.total_loans,
+        func.rank().over(order_by=desc(reader_stats.c.total_loans)).label('rank')
+    )
+    
+    return query.all()
