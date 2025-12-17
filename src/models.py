@@ -52,7 +52,6 @@ class Book(Base):
     __table_args__ = (
         CheckConstraint("publication_year IS NULL OR publication_year > 0", name="ck_book_pub_year_positive"),
         Index('ix_books_title', 'title'),
-        Index('ix_books_genre_id', 'genre_id'),
     )
 
 class BookCopy(Base):

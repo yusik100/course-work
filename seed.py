@@ -1,14 +1,42 @@
 import random
 from datetime import datetime, timedelta
-
 from src.database import SessionLocal
 from src.models import Loan, Genre, Author, Book, BookCopy, Reader, CopyStatus
 
+# Списки даних для генерації
+FIRST_NAMES = ["Олександр", "Дмитро", "Максим", "Артем", "Іван", "Микола", "Сергій", "Андрій", "Ольга", "Анна", "Юлія", "Марія", "Тетяна", "Олена", "Наталія", "Ірина"]
+LAST_NAMES = ["Коваленко", "Бондаренко", "Ткаченко", "Шевченко", "Кравченко", "Бойко", "Мельник", "Лисенко", "Поліщук", "Гаврилюк"]
+BOOK_DATA = [
+    ("Фантастика", "Дюна", "Френк Герберт", 1965),
+    ("Фантастика", "Фундація", "Айзек Азімов", 1951),
+    ("Фантастика", "Гіперіон", "Ден Сіммонс", 1989),
+    ("Фантастика", "Соляріс", "Станіслав Лем", 1961),
+    ("Детектив", "Вбивство у Східному експресі", "Агата Крісті", 1934),
+    ("Детектив", "Шерлок Холмс", "Артур Конан Дойл", 1887),
+    ("Детектив", "Код да Вінчі", "Ден Браун", 2003),
+    ("Класика", "Гордість і упередження", "Джейн Остін", 1813),
+    ("Класика", "Великий Гетсбі", "Ф. Скотт Фіцджеральд", 1925),
+    ("Класика", "1984", "Джордж Орвелл", 1949),
+    ("Класика", "Майстер і Маргарита", "Михайло Булгаков", 1967),
+    ("Наукова література", "Коротка історія часу", "Стівен Гокінг", 1988),
+    ("Наукова література", "Sapiens", "Ювал Ной Харарі", 2011),
+    ("Наукова література", "Егоїстичний ген", "Річард Докінз", 1976),
+    ("Фентезі", "Гаррі Поттер", "Дж.К. Роулінг", 1997),
+    ("Фентезі", "Володар Перснів", "Дж.Р.Р. Толкін", 1954),
+    ("Фентезі", "Хоббіт", "Дж.Р.Р. Толкін", 1937),
+    ("Жахи", "Воно", "Стівен Кінг", 1986),
+    ("Жахи", "Сяйво", "Стівен Кінг", 1977),
+]
+
+def get_isbn():
+    return f"978-{random.randint(100,999)}-{random.randint(1000,9999)}-{random.randint(0,9)}"
+
 def seed_data():
     session = SessionLocal()
-
     try:
-        print("Очищення старих даних...")
+        # --- 1. ОЧИЩЕННЯ ---
+        print("🧹 Очищення бази даних...")
+        # Видаляємо в правильному порядку (спочатку дочірні, потім батьківські)
         session.query(Loan).delete()
         session.query(BookCopy).delete()
         session.query(Book).delete()
@@ -17,98 +45,126 @@ def seed_data():
         session.query(Reader).delete()
         session.commit()
 
-        print("Починаємо наповнення бази...")
-
-        # --- ЖАНРИ ---
-        genres = [Genre(name="Фантастика"), Genre(name="Детектив"), Genre(name="Класика"), Genre(name="Наукова література")]
-        session.add_all(genres)
-        session.commit()
-
-        # --- АВТОРИ ---
-        orwell = Author(full_name="Джордж Орвелл", bio="Антиутопіст")
-        rowling = Author(full_name="Дж.К. Роулінг", bio="Гаррі Поттер")
-        pratchett = Author(full_name="Террі Пратчетт", bio="Фентезі-сатира")
-        gaiman = Author(full_name="Ніл Ґейман", bio="Фентезі")
-        king = Author(full_name="Стівен Кінг", bio="Король жахів")
+        # --- 2. СТВОРЕННЯ ЖАНРІВ І АВТОРІВ ---
+        print("📚 Створення книг та авторів...")
         
-        session.add_all([orwell, rowling, pratchett, gaiman, king])
-        session.commit()
+        # Кеш для уникнення дублікатів
+        genres_cache = {}
+        authors_cache = {}
+        books_list = []
 
-        # --- КНИГИ ---
-        def get_isbn():
-            return f"978-{random.randint(100,999)}-{random.randint(1000,9999)}-{random.randint(0,9)}"
-
-        book1 = Book(title="1984", publication_year=1949, genre=genres[0], isbn=get_isbn())
-        book1.authors.append(orwell)
-
-        book2 = Book(title="Гаррі Поттер і філософський камінь", publication_year=1997, genre=genres[0], isbn=get_isbn())
-        book2.authors.append(rowling)
-
-        book3 = Book(title="Добрі знамення (Good Omens)", publication_year=1990, genre=genres[0], isbn=get_isbn())
-        book3.authors = [pratchett, gaiman]
-
-        book4 = Book(title="Сяйво", publication_year=1977, genre=genres[1], isbn=get_isbn())
-        book4.authors.append(king)
-
-        session.add_all([book1, book2, book3, book4])
-        session.commit()
-
-        # --- КОПІЇ ---
-        all_books = session.query(Book).all()
-        created_copies = []
+        for genre_name, title, author_name, year in BOOK_DATA:
+            # Жанр
+            if genre_name not in genres_cache:
+                g = Genre(name=genre_name)
+                session.add(g)
+                genres_cache[genre_name] = g
+            
+            # Автор
+            if author_name not in authors_cache:
+                a = Author(full_name=author_name)
+                session.add(a)
+                authors_cache[author_name] = a
+            
+            # Книга
+            book = Book(
+                title=title,
+                publication_year=year,
+                genre=genres_cache[genre_name],
+                isbn=get_isbn()
+            )
+            book.authors.append(authors_cache[author_name])
+            session.add(book)
+            books_list.append(book)
         
-        for book in all_books:
-            for i in range(3):
+        session.commit()
+
+        # --- 3. СТВОРЕННЯ КОПІЙ ---
+        print("🖨️  Створення копій...")
+        all_copies = []
+        for book in books_list:
+            # Створюємо від 2 до 5 копій для кожної книги
+            count = random.randint(2, 5)
+            for i in range(count):
                 copy = BookCopy(
-                    inventory_number=f"INV-{book.id}-{i+100}",
+                    inventory_number=f"INV-{book.id}-{i+1000}",
                     status=CopyStatus.available,
                     book=book
                 )
-                created_copies.append(copy)
                 session.add(copy)
+                all_copies.append(copy)
         session.commit()
 
-        # --- ЧИТАЧІ ---
-        readers = [
-            Reader(first_name="Іван", last_name="Тестовий", email="ivan@test.com", phone_number="+380501112233"),
-            Reader(first_name="Марія", last_name="Книголюб", email="maria@test.com", phone_number="+380971112233"),
-            Reader(first_name="Петро", last_name="Студент", email="petro@test.com")
-        ]
-        session.add_all(readers)
+        # --- 4. СТВОРЕННЯ ЧИТАЧІВ ---
+        print("busts👥 Генерація читачів...")
+        readers_list = []
+        for _ in range(30): # 30 читачів
+            fname = random.choice(FIRST_NAMES)
+            lname = random.choice(LAST_NAMES)
+            email = f"{fname.lower()}.{lname.lower()}{random.randint(1,999)}@example.com"
+            
+            reader = Reader(first_name=fname, last_name=lname, email=email)
+            session.add(reader)
+            readers_list.append(reader)
         session.commit()
 
-        # --- ІСТОРІЯ ВИДАЧ ---
-        loan_closed = Loan(
-            book_copy_id=created_copies[0].id,
-            reader_id=readers[0].id,
-            borrowed_at=datetime.now() - timedelta(days=10),
-            due_date=datetime.now().date() + timedelta(days=20),
-            returned_at=datetime.now()
-        )
+        # --- 5. ГЕНЕРАЦІЯ ІСТОРІЇ ВИДАЧ (LOANS) ---
+        print("📜 Генерація історії видач...")
         
-        active_copy = created_copies[1]
-        active_copy.status = CopyStatus.on_loan
-        
-        loan_active = Loan(
-            book_copy_id=active_copy.id,
-            reader_id=readers[1].id,
-            borrowed_at=datetime.now() - timedelta(days=2),
-            due_date=datetime.now().date() + timedelta(days=12),
-            returned_at=None
-        )
+        # Сценарій 1: Старі видачі (повернуті)
+        # Робимо так, щоб деякі читачі мали багато книг (для Топ-5)
+        for reader in readers_list:
+            # Кожен читач взяв від 0 до 8 книг у минулому
+            loans_count = random.randint(0, 8)
+            
+            for _ in range(loans_count):
+                copy = random.choice(all_copies)
+                
+                # Дата видачі: від 6 місяців до 1 місяця тому
+                days_ago = random.randint(30, 180)
+                borrowed = datetime.now() - timedelta(days=days_ago)
+                # Повернули через 5-15 днів
+                returned = borrowed + timedelta(days=random.randint(5, 15))
+                
+                loan = Loan(
+                    book_copy_id=copy.id,
+                    reader_id=reader.id,
+                    borrowed_at=borrowed,
+                    due_date=borrowed + timedelta(days=14), # Давали на 2 тижні
+                    returned_at=returned
+                )
+                session.add(loan)
 
-        session.add(loan_closed)
-        session.add(loan_active)
-        session.add(active_copy)
+        # Сценарій 2: Активні боржники (для звіту Overdue)
+        # Беремо випадкових 5 копій і робимо їх простроченими
+        for _ in range(5):
+            copy = random.choice(all_copies)
+            reader = random.choice(readers_list)
+            
+            # Видали 30 днів тому (термін був 14 днів -> прострочено на 16 днів)
+            borrowed = datetime.now() - timedelta(days=30)
+            
+            loan = Loan(
+                book_copy_id=copy.id,
+                reader_id=reader.id,
+                borrowed_at=borrowed,
+                due_date=borrowed + timedelta(days=14),
+                returned_at=None # Ще не повернули!
+            )
+            # Важливо: змінити статус копії
+            copy.status = CopyStatus.on_loan
+            session.add(copy) 
+            session.add(loan)
 
         session.commit()
-        print("База успішно наповнена даними!")
+        print(f"✅ Готово! Створено ~{len(books_list)} книг, ~{len(readers_list)} читачів та історію видач.")
 
     except Exception as e:
-        print(f"Сталася помилка: {e}")
+        print(f"❌ Помилка: {e}")
         session.rollback()
     finally:
         session.close()
 
 if __name__ == "__main__":
     seed_data()
+    
