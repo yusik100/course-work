@@ -10,7 +10,7 @@ Backend-додаток для автоматизації роботи біблі
 
 ---
 
-## 🛠 Технологічний стек
+## Технологічний стек
 
 * **Мова:** Python 3.10+
 * **База даних:** PostgreSQL 15
@@ -27,7 +27,7 @@ Backend-додаток для автоматизації роботи біблі
 ### Крок 1. Клонування репозиторію
 
 ```bash
-git clone <https://github.com/yusik100/course-work.git>
+git clone https://github.com/yusik100/course-work.git
 cd library_project
 
 ```
@@ -87,6 +87,20 @@ docker exec -it library_app_container python demo.py
 
 ```bash
 docker exec -it library_app_container pytest
+
+```
+
+**Запуск окремого файлу з тестами:**
+
+```bash
+docker exec -it library_app_container pytest tests/unit/test_models.py
+
+```
+
+**Запуск тесту за назвою:**
+
+```bash
+docker exec -it library_app_container pytest -v -k "lifecycle"
 
 ```
 
