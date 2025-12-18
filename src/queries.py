@@ -37,7 +37,7 @@ def get_overdue_loans(session: Session):
         for loan in overdue_loans:
             delay = (datetime.now().date() - loan.due_date).days
             print(f"{loan.reader.first_name} {loan.reader.last_name}: "
-                  f"книга '{loan.copy.book.title}' прострочена на {delay} днів/")
+                  f"книга '{loan.copy.book.title}' прострочена на {delay} днів")
 
 
 def get_top_readers(session: Session):
