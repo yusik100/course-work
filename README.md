@@ -67,8 +67,8 @@ docker exec -it library_app_container python seed.py
 
 Після запуску контейнерів веб-інтерфейс доступний у браузері.
 
-👉 **Інтерактивна документація (Swagger UI):**
-**[http://localhost:8000/docs](https://www.google.com/search?q=http://localhost:8000/docs)**
+**Інтерактивна документація (Swagger UI):**
+**[http://localhost:8000/docs](http://localhost:8000/docs)**
 
 Тут можна:
 
