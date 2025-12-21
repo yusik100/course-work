@@ -3,9 +3,7 @@ from sqlalchemy import func, desc
 from src.models import Book, Loan, Reader, Genre, BookCopy, Author
 from datetime import datetime
 
-
 def get_books_by_genre(session: Session, genre_name: str):
-
     print(f"\nПошук книг жанру: '{genre_name}'")
     
     books = session.query(Book)\
@@ -21,9 +19,10 @@ def get_books_by_genre(session: Session, genre_name: str):
             authors = ", ".join([a.full_name for a in book.authors])
             print(f"{book.title} ({book.publication_year}) — {authors}")
 
+    return books
+
 
 def get_overdue_loans(session: Session):
-
     print(f"\nЗвіт: Боржники")
     
     overdue_loans = session.query(Loan).filter(
@@ -31,17 +30,28 @@ def get_overdue_loans(session: Session):
         Loan.due_date < datetime.now().date()
     ).all()
 
+    api_results = []
+
     if not overdue_loans:
         print("Боржників немає! Всі повернули книги вчасно.")
     else:
         for loan in overdue_loans:
             delay = (datetime.now().date() - loan.due_date).days
+
             print(f"{loan.reader.first_name} {loan.reader.last_name}: "
                   f"книга '{loan.copy.book.title}' прострочена на {delay} днів")
 
+            api_results.append({
+                "reader": f"{loan.reader.first_name} {loan.reader.last_name}",
+                "book": loan.copy.book.title,
+                "days_overdue": delay,
+                "due_date": loan.due_date
+            })
+
+    return api_results
+
 
 def get_top_readers(session: Session):
-
     print(f"\nТоп-5 читачів")
     
     results = session.query(
@@ -55,14 +65,24 @@ def get_top_readers(session: Session):
     .limit(5)\
     .all()
 
+    api_results = []
+
     if not results:
         print("Даних ще немає.")
     
     for i, (first, last, count) in enumerate(results, 1):
         print(f"{i}. {first} {last} — взяв(ла) {count} книг")
+        
+        api_results.append({
+            "rank": i,
+            "name": f"{first} {last}",
+            "books_count": count
+        })
+        
+    return api_results
+
 
 def get_genre_popularity(session: Session):
-
     print(f"\nПопулярність жанрів")
 
     results = session.query(
@@ -77,10 +97,20 @@ def get_genre_popularity(session: Session):
     .order_by(desc('loan_count'))\
     .all()
     
+    api_results = []
+
     for genre, count in results:
         print(f"{genre}: видано {count} разів")
+        
+        api_results.append({
+            "genre": genre,
+            "count": count
+        })
+        
+    return api_results
 
-def get_reader_ranks(session):
+
+def get_reader_ranks(session: Session):
     reader_stats = session.query(
         Reader.id,
         Reader.first_name,
@@ -95,4 +125,9 @@ def get_reader_ranks(session):
         func.rank().over(order_by=desc(reader_stats.c.total_loans)).label('rank')
     )
     
-    return query.all()
+    raw_results = query.all()
+
+    return [
+        {"rank": row.rank, "name": f"{row.first_name} {row.last_name}", "total": row.total_loans}
+        for row in raw_results
+    ]

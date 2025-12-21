@@ -17,8 +17,10 @@ def run_demonstration():
 
         print(f"\nРейтинг читачів (RANK):")
         ranks = get_reader_ranks(session)
-        for first, last, count, rank in ranks[:10]: 
-            print(f"Ранг {rank}: {first} {last} — прочитав {count} книг")
+
+        for row in ranks[:10]: 
+            print(f"Ранг {row['rank']}: {row['name']} — прочитав {row['total']} книг")
+            
         if len(ranks) > 10:
             print("... (і ще інші читачі)")
 
@@ -43,7 +45,6 @@ def run_demonstration():
 
         print("\nВидаємо книгу...")
         create_loan(session, book_copy_id=available_copy.id, reader_id=reader.id)
-        print("Успішно видано.")
 
         print("\nСпроба видати ту ж саму книгу ще раз...")
         try:
@@ -53,7 +54,6 @@ def run_demonstration():
 
         print("\nЧитач повертає книгу...")
         return_book(session, book_copy_id=available_copy.id)
-        print("Книгу успішно повернуто.")
 
     except Exception as e:
         print(f"\nКРИТИЧНА ПОМИЛКА: {e}")

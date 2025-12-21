@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from src.models import Loan, BookCopy, Reader, CopyStatus
 
 def create_loan(session: Session, book_copy_id: int, reader_id: int, days: int = 14):
-
     print(f"\nСпроба видати копію #{book_copy_id} читачеві #{reader_id}")
 
     try:
@@ -32,9 +31,10 @@ def create_loan(session: Session, book_copy_id: int, reader_id: int, days: int =
 
         session.commit()
         session.refresh(new_loan)
-        
+
         print(f"Книгу '{copy.book.title}' видано.")
         print(f"Запис #{new_loan.id}, повернути до {new_loan.due_date}")
+
         return new_loan
 
     except Exception as e:
@@ -43,7 +43,6 @@ def create_loan(session: Session, book_copy_id: int, reader_id: int, days: int =
 
 
 def return_book(session: Session, book_copy_id: int):
-
     print(f"\nСпроба повернути копію #{book_copy_id}")
 
     try:
@@ -70,8 +69,8 @@ def return_book(session: Session, book_copy_id: int):
         session.rollback()
         raise e
     
-def delete_reader(session: Session, reader_id: int):
 
+def delete_reader(session: Session, reader_id: int):
     print(f"\nСпроба видалити читача #{reader_id}")
     
     try:
@@ -80,7 +79,6 @@ def delete_reader(session: Session, reader_id: int):
             raise ValueError(f"Читача {reader_id} не знайдено")
 
         name = f"{reader.first_name} {reader.last_name}"
-        
         loans_count = len(reader.loans) 
 
         session.delete(reader)
@@ -88,13 +86,20 @@ def delete_reader(session: Session, reader_id: int):
 
         print(f"Читача '{name}' успішно видалено.")
         print(f"Також автоматично видалено {loans_count} записів з його історії (CASCADE).")
+        
+        return {
+            "status": "deleted", 
+            "reader_id": reader_id, 
+            "name": name, 
+            "loans_deleted": loans_count
+        }
     
     except Exception as e:
         session.rollback()
         raise e
 
-def report_lost_book(session: Session, book_copy_id: int):
 
+def report_lost_book(session: Session, book_copy_id: int):
     print(f"\nСписання книги #{book_copy_id} (Втрачена)")
     
     try:
@@ -108,6 +113,8 @@ def report_lost_book(session: Session, book_copy_id: int):
 
         print(f"Книгу '{copy.book.title}' позначено як ВТРАЧЕНУ.")
         print("Вона більше не доступна для видачі, але залишилась в базі.")
+        
+        return copy
 
     except Exception as e:
         session.rollback()
